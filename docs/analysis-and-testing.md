@@ -28,8 +28,8 @@ These are the main steps that the automated test suite should verify:
 
 1. A browser tab is launched, with the url of mute.
 2. A document is opened. 
-    - An editor is accessible, with various 
-    - The signaling server is accessible after a second
+    - An editor is accessible 
+    - The signaling server is accessible after a few seconds
 3. Text is written on the document
 4. Another browser tab is launched, with the url of the previous document.
     - The document is opened.
@@ -60,14 +60,90 @@ These are the main steps that the automated test suite should verify:
 
 From this list, we will make this POC with TestCafe.
 
+
+## Specificity of MUTE for testing
+
+### Where to click to have the focus on the editor :
+How are the lines presented :
+Lines added are in a block with the CodeMirror-lines class.
+In this object, there is a div containing a CodeMirror-code class.
+In the CodeMirror-code, there are all the lines on the document
+
+Here is the full route 
+```
+html
+--body
+----mute-root 
+------mute-doc
+--------mat-sidenav-content
+----------mat-drawer-container
+------------mat-drawer-content
+--------------mute-editor 
+----------------mat-card
+------------------div mat-card mat-focus-indicator card-lt-sm
+--------------------div tui-editor-defaultUI
+----------------------div te-toolbar-section
+------------------------div tui-editor te-md-mode
+--------------------------div te-md-container te-preview-style-tab
+----------------------------div te-editor te-tab-active
+------------------------------div CodeMirror cm-s-default CodeMirror-wrap 
+```
+
+The text written is available at the previous route, with this additional route
+```
+div CodeMirror-scroll
+--div CodeMirror-sizer 
+----div
+------div
+--------CodeMirror-lines
+----------div
+------------div CoveMirror-code
+```
+
+
+In code mirror editor, here are the lines as typed :
+
+```
+Hello,
+
+How are you
+
+Have a good day
+```
+
+In the editor side, we will have 6 lines in the CodeMirror-lines class, 
+```
+<pre class=" CodeMirror-line " role="presentation">
+    <span role="presentation">Hello,</span>
+</pre>
+<pre class=" CodeMirror-line " role="presentation">
+    <span role="presentation"></span>
+</pre>
+<pre class=" CodeMirror-line " role="presentation">
+    <span role="presentation">How are you</span>
+</pre>
+<pre class=" CodeMirror-line " role="presentation">
+    <span role="presentation"></span>
+</pre>
+<pre class=" CodeMirror-line " role="presentation">
+    <span role="presentation">Have a good day</span>
+</pre>
+```
+
+Additionally, the text written in the editor is available (*without accounting newlines*) under a div with the class `tui-editor-contents`.
+
 ##  Results of automated test suite solution
 
-### TestCafe 
+### **TestCafe**
+
+#### Technical choices
+
+#### How is it doing with the scenario
 
 1. A browser tab is launched, with the url of mute.
 2. A document is opened. 
-    - An editor is accessible, with various 
-    - The signaling server is accessible after a second
+    - An editor is accessible 
+    - The signaling server is accessible after a few seconds
 3. Text is written on the document
 4. Another browser tab is launched, with the url of the previous document.
     - The document is opened.
