@@ -1,0 +1,19 @@
+{
+  "name": "poc-testcafe-mute",
+  "version": "1.0.0",
+  "description": "Testing testcafe with mute",
+  "main": "runner.ts",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc --build",
+    "prestart":"npm run build",
+    "start":"node dist/runner.js"
+  },
+  "author": "Baptiste Hubert",
+  "license": "MIT",
+  "devDependencies": {
+    "testcafe": "^2.0.1",
+    "typescript": "^4.8.4"
+  }
+}
