@@ -11,6 +11,8 @@ let expectedText =
 
 Have a nice day  `
 
+let urlSignaling = 'ws://localhost:8011'
+
 test('My first test', async t => {
     
     console.log("--Testing the main scenario--")
@@ -20,12 +22,20 @@ test('My first test', async t => {
         navigateTo('http://localhost:4200/urlDoc')
 
     //2. A document is opened. 
-    // - An editor is accessible 
-    // - The signaling server is accessible after a few seconds
-    
-    //Selecting the DOM element - the editor
+    // - An editor is accessible    
     let editorComponent = Selector('div')
-                            .child('.CodeMirror')
+                            .child('.CodeMirror')                     
+    await t
+        .typeText(editorComponent, 'access')
+        .expect(editorComponent.innerText).eql('access', 'Some text should have been added to the editor')
+        .pressKey('backspace backspace backspace backspace backspace backspace')
+
+    // - The signaling server is up and running
+    let signalingServerTest = await tool.setupSignalingServerTest(urlSignaling)
+    console.log("Is the signaling server existing : ", signalingServerTest)
+    await t
+        .expect(signalingServerTest).ok("The signaling server should be running online and opening it should be possible")
+
 
     //3. Text is written on the document
     await t
