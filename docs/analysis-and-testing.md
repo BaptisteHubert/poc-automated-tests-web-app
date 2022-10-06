@@ -3,9 +3,9 @@
 With the high complexity of the code, each addition to the code might add a bug that may not be perceivable.
 As we aim to modify, evolve mute and add features in the future, we need to have a testing suite to guarantee the non-regression of MUTE's core functionalities.
 
-## Choosing an automated test suite solution
+## **Choosing an automated test suite solution**
 
-### What should be the core features of the testing suite solution ?
+### **What should be the core features of the testing suite solution ?**
 From a wide perspective, the testing suite should fulfill these conditions :
 - Fairly easy to understand and use
 - Strongly supported by the community : documented and maintained
@@ -17,7 +17,7 @@ From a wide perspective, the testing suite should fulfill these conditions :
 - *Bonus features :*
     - Being easily scalable to test browsers as if we were on different devices (tablet, smartphone...)
 
-### Main scenario of the POC
+### **Main scenario of the POC**
 
 To test the capabilities of the automated test suite that will be used in this poc, we have a scenario that should cover our needs.
 If the automated test suite can easily flow through the steps, it means that it can be a suitable option as a test suite for MUTE.
@@ -34,12 +34,27 @@ These are the main steps that the automated test suite should verify:
 4. Another browser tab is launched, with the url of the previous document.
     - The document is opened.
     - The signaling server is accessible after a second 
-        - Text in the editor should be the exact same as the text written in the previous step.
+    - There should be two user on the document
+    - Text in the editor should be the exact same as the text written in the previous step.
 5. The signaling server is killed off
+    - There should still be two user on the document
 6. Browser tab 1 adds text to the document. Browser tab 2 adds text to the document
-7. Text is merged and appears the same in the browser tabs
+    - Browser tab 1 leave the document and then re-join it. The modification bound to this tab should still be visible in the document
+    - Browser tab 2 leave the document and then re-join it. The modification bound to this tab should still be visible in the document 
+7. The signaling server is rebooted
+    - The signaling server is accessible after a few seconds
+    - Text is merged and appears the same in the two browser tabs
 
-### End-To-End web application testing solutions
+#### **Additional scenario**
+
+*Ui specific*
+- Two users connect on the same document
+- In the first tab, the username is changed to User1
+- In the second tab, the username is changed to User2
+- In the users list in each tab, name should be correct
+
+
+### **End-To-End web application testing solutions**
 
 - [Testcafe.io](https://testcafe.io/) - **The solution that we will be using**
     - Typescript support for writing tests
@@ -61,9 +76,9 @@ These are the main steps that the automated test suite should verify:
 From this list, we will make this POC with TestCafe.
 
 
-## Specificity of MUTE for testing
+## **Specificity of MUTE for testing**
 
-### Where to click to have the focus on the editor :
+### **Where to click to have the focus on the editor :**
 How are the lines presented :
 Lines added are in a block with the CodeMirror-lines class.
 In this object, there is a div containing a CodeMirror-code class.
@@ -132,13 +147,18 @@ In the editor side, we will have 6 lines in the CodeMirror-lines class,
 
 Additionally, the text written in the editor is available (*without accounting newlines*) under a div with the class `tui-editor-contents`.
 
-##  Results of automated test suite solution
+##  **Results of automated test suite solution**
 
 ### **TestCafe**
 
-#### Technical choices
+#### **Technical choices**
 
-#### How is it doing with the scenario
+*Comparing what's written in the editor with an expected text*  
+We faced issues when doing this because invisible characters (*u200B control characters*) made the above assertion impossible to pass.
+As a solution, we were helped both by [this comment](https://stackoverflow.com/a/51602415), as it helped us format the text written in the edito to remove control characters, but we were still facing issues with newline and spaces making comparing string impossible. With this comment, we knew that normalizing the text was necessary.  
+We found a solution in [this answer](https://stackoverflow.com/a/71459391), as we used this code in our `tools.normalizeTextForEql` and subsequent `tools.normalizeNewlineAndSpace` function.
+
+#### **How is it doing with the scenario**
 
 1. A browser tab is launched, with the url of mute.
 2. A document is opened. 
@@ -148,7 +168,13 @@ Additionally, the text written in the editor is available (*without accounting n
 4. Another browser tab is launched, with the url of the previous document.
     - The document is opened.
     - The signaling server is accessible after a second 
-        - Text in the editor should be the exact same as the text written in the previous step.
+    - There should be two user on the document
+    - Text in the editor should be the exact same as the text written in the previous step.
 5. The signaling server is killed off
+    - There should still be two user on the document
 6. Browser tab 1 adds text to the document. Browser tab 2 adds text to the document
-7. Text is merged and appears the same in the browser tabs
+    - Browser tab 1 leave the document and then re-join it. The modification bound to this tab should still be visible in the document
+    - Browser tab 2 leave the document and then re-join it. The modification bound to this tab should still be visible in the document 
+7. The signaling server is rebooted
+    - The signaling server is accessible after a few seconds
+    - Text is merged and appears the same in the two browser tabs
