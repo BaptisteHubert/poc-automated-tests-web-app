@@ -5,7 +5,47 @@ export class tools{
     constructor(){
     }
 
-    //----------------Normalizing or formatting data----------------
+    //----------------Getting text written in the editor----------------
+    public async getTextWrittenInTheCodeMirrorEditor(codeMirrorCode : Selector) : Promise<string>{
+        let textWrittenInTheEditor = ``
+        let numberOfLines = await codeMirrorCode.childElementCount
+        for (let i = 0 ; i < numberOfLines ; i++ ){
+            //editorLines.child is the CodeMirror-line
+            let codeMirrorLine = await codeMirrorCode.child(i)
+            //editorLines.child.child(0) is the span in the CodeMirror-line element
+            let codeMirrorLineChild = await codeMirrorLine.child(0)
+            if (await codeMirrorLineChild.hasChildElements){
+                let childIsCodeMirrorCursor = await codeMirrorLineChild.child(0).hasClass("CodeMirror-widget")
+                if (childIsCodeMirrorCursor){
+                    let customSelector = <CustomSelector>codeMirrorLineChild.addCustomDOMProperties({
+                        innerHTML: el => el.innerHTML
+                    })
+                    textWrittenInTheEditor += await this.handleCodeMirrorUserCursor(customSelector) + "\n"
+                } else {
+                    textWrittenInTheEditor += await codeMirrorLineChild.innerText  + "\n"
+                }
+            } else {
+                textWrittenInTheEditor += await codeMirrorLineChild.innerText  + "\n"
+            }
+        }
+        //Remove the last newline
+        textWrittenInTheEditor = textWrittenInTheEditor.slice(0,-1)
+        return textWrittenInTheEditor
+    }
+
+    //Handles the line where the cursor of another user might appear and add the name of the user to the editor text value
+    public async handleCodeMirrorUserCursor(cs : CustomSelector) : Promise<string>{
+        let textValueWithoutCursorFinal = ''
+        let htmlCode = await cs.innerHTML
+        const getRidOfCodeMirrorCursorRegex = /(<span[^>]*class=\"CodeMirror-widget\"[^>]*>(.*?)<\/span>)((<\/span[>])*)/g
+        let textValueWithoutCursorStep1 = await htmlCode.replace(getRidOfCodeMirrorCursorRegex, "")
+        let textValueWithoutCursorStep2 = textValueWithoutCursorStep1.replace(/&nbsp;*/gm, " ")
+        textValueWithoutCursorFinal += textValueWithoutCursorStep2
+        return textValueWithoutCursorFinal
+    }
+
+
+    //------------------Normalizing or formatting data----------------
 
     //Normalize a string with newline and spaces for equality testing
     public normalizeTextForEql(str : string){
@@ -46,4 +86,9 @@ export class tools{
 
         return isSignalingServerAccessible
     }
+}
+
+//The interface used for adding custom DOM properties to TestCafe Selector
+interface CustomSelector extends Selector {
+    innerHTML: Promise<any>;
 }
