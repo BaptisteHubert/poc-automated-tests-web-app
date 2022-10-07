@@ -158,6 +158,18 @@ We faced issues when doing this because invisible characters (*u200B control cha
 As a solution, we were helped both by [this comment](https://stackoverflow.com/a/51602415), as it helped us format the text written in the edito to remove control characters, but we were still facing issues with newline and spaces making comparing string impossible. With this comment, we knew that normalizing the text was necessary.  
 We found a solution in [this answer](https://stackoverflow.com/a/71459391), as we used this code in our `tools.normalizeTextForEql` and subsequent `tools.normalizeNewlineAndSpace` function.
 
+Another problem that we faced during the POC, is that when two users are on the same document, the other user name is written in the editor `innertext`. We found out that, when another user is on the document, at the place where he is, a span with class `CodeMirror-widget` is there to give information about the current other user.
+
+Some way of going through this :
+- Waiting for the cursor to disappear - ```await new Promise(resolve => setTimeout(resolve, 10000));``` - KO
+- Removing " Anonymous" from the string - Not clean enough and not adaptable to most use cases- KO
+- Getting the lines written, and check if a `<span>` with the aforementioned class is in the line - A bit of code but should globally work - OK
+    - We go through the child of the `CodeMirror-line` element. Normally (*when there are no visible cursor in the editor*), there should only be a span containing the text of the line. When the span with the class `CodeMirror-widget` appears, it appears as a child of the span mentioned before. In the code, we are going through the line, and verifying if there are child elements where there shouldn't be (the child of the child of the `CodeMirror-line` element)
+    - We found a way to get the HTMl value of the elements in a `CodeMirror-line` using the code provided in the first example, for TypeScript, in [the documentation](https://testcafe.io/documentation/402759/reference/test-api/selector/addcustomdomproperties) from TestCafe.
+    - We used the regex provided in [this answer](https://stackoverflow.com/a/226591) and adapted it to our needs
+    - We are then removing the excess in the HTML to get the clean text value of the line.
+
+
 #### **How is it doing with the scenario**
 
 1. A browser tab is launched, with the url of mute.
