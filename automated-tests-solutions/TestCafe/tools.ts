@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws';
+import { exec } from 'child_process'
 //This class lists tool function that can be used across the TestCafe project
 export class tools{
 
@@ -86,6 +87,32 @@ export class tools{
 
         return isSignalingServerAccessible
     }
+
+    public startSignalingServer(){
+        this.handleSignalingServer("start")
+    }
+
+    public stopSignalingServer(){
+        this.handleSignalingServer("stop")
+    }
+
+    public async waitAfterActionOnSignaling(){
+        await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
+    public handleSignalingServer(option : string){
+        let commandFullLine = 'cd ../../web-app/ && sh docker_actions.sh ' + option
+        exec(commandFullLine, (err, stdout, stdrr) => {
+            /* Uncomment if there is an error during execution of a test
+            console.log("Error : ", err)
+            console.log("stdout : ", stdout)
+            console.log("stdrr : ", stdrr)
+            */
+        })
+
+    }
+
+
 }
 
 //The interface used for adding custom DOM properties to TestCafe Selector
