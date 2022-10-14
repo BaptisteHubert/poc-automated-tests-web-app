@@ -26,19 +26,22 @@ The test suite will be tested on [this version](https://github.com/BaptisteHuber
 
 These are the main steps that the automated test suite should verify:
 
-1. A browser tab is launched, with the url of mute.
+1. A browser tab is launched, with the URL of Mute.
 2. A document is opened. 
     - An editor is accessible 
     - The signaling server is accessible after a few seconds
 3. Text is written on the document
-4. Another browser tab is launched, with the url of the previous document.
+4. Another browser tab is launched, with the URL of the previous document.
     - The document is opened.
     - The signaling server is accessible after a second 
     - There should be two user on the document
     - Text in the editor should be the exact same as the text written in the previous step.
 5. The signaling server is killed off
     - There should still be two user on the document
-6. Browser tab 1 adds text to the document. Browser tab 2 adds text to the document
+    - Each user can add text to the doc and modification is visible from the other tab
+        - User 1 adds some text to the editor. Text added is seen in User 2 tab
+        - User 2 adds some text to the editor. Text added is seen in User 1 tab
+6. Testing the offline mode
     - Browser tab 1 leave the document and then re-join it. The modification bound to this tab should still be visible in the document
     - Browser tab 2 leave the document and then re-join it. The modification bound to this tab should still be visible in the document 
 7. The signaling server is rebooted
@@ -169,24 +172,78 @@ Some way of going through this :
     - We used the regex provided in [this answer](https://stackoverflow.com/a/226591) and adapted it to our needs
     - We are then removing the excess in the HTML to get the clean text value of the line.
 
+*Collaborating on a document, and then killing the signaling server*  
+We faced some problems as we were trying to test the process when two users join the same document.  
+The problem comes from the fact that we were launching each tab on the same browser (*chrome*). Subsequently, error due to the use of the localstorage by MUTE made the testing impossible. By example, when we killed the signaling server, user could write on the document but the text he wrote would be truncated on the other tab. 
 
-#### **How is it doing with the scenario**
+We have found a way to simulate two different users working on the same document by simulating a pause when need during two concurrents tests run. Indeed, we do not need to have two users running concurrently and syncing the tests. That would be too much time spent on tuning the tests. That was wat was intended at first as a sort of quick fix but with this logic, we can sync tests much more easily, and also keep track of where we are in the tests progress.
 
-1. A browser tab is launched, with the url of mute.
-2. A document is opened. 
-    - An editor is accessible 
-    - The signaling server is accessible after a few seconds
-3. Text is written on the document
-4. Another browser tab is launched, with the url of the previous document.
-    - The document is opened.
-    - The signaling server is accessible after a second 
-    - There should be two user on the document
-    - Text in the editor should be the exact same as the text written in the previous step.
-5. The signaling server is killed off
-    - There should still be two user on the document
-6. Browser tab 1 adds text to the document. Browser tab 2 adds text to the document
-    - Browser tab 1 leave the document and then re-join it. The modification bound to this tab should still be visible in the document
-    - Browser tab 2 leave the document and then re-join it. The modification bound to this tab should still be visible in the document 
-7. The signaling server is rebooted
-    - The signaling server is accessible after a few seconds
-    - Text is merged and appears the same in the two browser tabs
+Basically, as there are two tests file, both sharing some variables, we created a common variable file. In this file, we have added two booleans.
+- `executingTestUser1` set at `true` because the first test to run will be the test of the main user, the user 1.
+- `executingTestUser2` set at `false` as we will wait for actions to be done on the doc by the user 1 before simulating actions from user 2.
+
+Those variables can be retrieved via getters. They do not have a setter as we do not need to have both tests really running concurrently. The setter basically make the current `true` value at `false`, and the `false` value to `true`, switching which user is active. This function is called `stopExecAndResumeOther`
+
+To "stop" a test, we added  this code :
+```
+while (mainScenarioVariables.getExecutingTestUser2() != true){
+        await t.wait(1000)
+}
+```
+
+During this time, the user 1 execute is code. When he has done what he need to do, he calls the `stopExecAndResumeOther` function and then we add this code to "stop" his code from executing :
+```
+while (mainScenarioVariables.getExecutingTestUser1() != true){
+        await t.wait(1000)
+}
+```
+
+
+#### **Adapting the main scenario to TestCafe and two users**
+*Next to the steps, we will mark U1 or U2 (representing User 1 and User2) as which user is active at that time*
+1. A browser tab is launched, with the URL of Mute. - **(U1)**
+2. A document is opened. - **(U1)**
+    - a. The editor is accessible - **(U1)**
+    - b. The signaling server is accessible after a few seconds - **(U1)**
+3. Text is written on the document - **(U1)**
+    - a. The text written in the document is displayed as intended - **(U1)**
+4. Another browser tab is launched, with the URL of the previous document. 
+    - **Switch to User 2**
+    - a. The document is opened - **(U2)**
+    - b. The signaling server is accessible after a few seconds - **(U2)**
+    - c. There should be two user on the document - **(U2)**
+    - d. Text in the editor should be the exact same as the text written in the previous step by User 1 - **(U2)**
+    - e. The editor is accessible by User 2  - **(U2)**
+    - **Switch to User 1**
+    - f. There should be two user on the document - **(U1)**
+    - g. The second user has added some text to the document - **(U1)**
+        *- The first user removes what the second user added* - **(U1)**
+        - **Switch to User 2**
+    
+    - h. The text is back to normal (User 1 removed what was added by User 2) - **(U2)**
+
+5. The signaling server is killed off - **(U2)**
+    - a. The signaling server is unatteignable - **(U2)**
+    - b. There should still be two user on the document - **(U2) & (U1)** 
+    - c. Each user can add text to the doc and modification is visible from the other tab - **(U2) & (U1)**
+        - c.1 User 2 adds some text to the editor. - **(U2)**
+            - *Verify that text was added in the editor* - **(U2)**
+            - **Switch to User 1**
+        - c.2 Text added by User 2 is seen in User 1 tab - **(U1)**
+            - User 1 remove what User 2 added to the editor - **(U1)**
+            - User 1 adds some text to the editor - **(U1)**
+            - *Verify that text was added in the editor* - **(U1)**
+            - **Switch to User 2**
+        - c.3 Text added by User 1 is seen in User 2 tab - **(U2)**
+            - User 2 remove what User 1 added to the editor - **(U2)**
+6. Testing the offline mode **(U2) && (U1)**
+    - a. Browser tab 2 leave the document and then re-join it - **(U2)**
+        - a.1. User 2 is alone as he left the document and re-joined it while the signaling server was off - **(U2)**
+        - a.2. The modification bound to the user 2 tab should still be visible in the document - **(U2)**
+        - **Switch to User 1**
+    - b. Browser tab 1 leave the document and then re-join it - **(U1)**
+        - b.1. User 1 is alone as he left the document and re-joined it while the signaling server was off - **(U1)**
+        - b.2. The modification bound to the user 1 tab should still be visible in the document - **(U1)**
+7. The signaling server is rebooted - **(U1)**
+    - a. The signaling server is accessible after a few seconds - **(U1)**
+    - b. Text is merged and appears the same in the two browser tabs - **(U1) & (U2)**

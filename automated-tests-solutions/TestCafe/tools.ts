@@ -1,12 +1,15 @@
 import { WebSocket } from 'ws';
 import { exec } from 'child_process'
+import createTestCafe from "testcafe";
+
+
 //This class lists tool function that can be used across the TestCafe project
 export class tools{
 
     constructor(){
     }
-
-    //----------------Getting text written in the editor----------------
+    
+    //----------------Getting the text written in the editor----------------
     public async getTextWrittenInTheCodeMirrorEditor(codeMirrorCode : Selector) : Promise<string>{
         let textWrittenInTheEditor = ``
         let numberOfLines = await codeMirrorCode.childElementCount
@@ -62,7 +65,7 @@ export class tools{
 
     }
 
-    public normalizeNewlineAndSpace(str : string) {
+    private normalizeNewlineAndSpace(str : string) {
         // Normalizing newline
         let strNormalized = str.replace(/\n\r/g, '\n');
         strNormalized = strNormalized.replace(/\p{Zl}/gu, '\n');
@@ -70,6 +73,20 @@ export class tools{
         // Normalizing space
         strNormalized = strNormalized.replace(/\p{Zs}/gu, ' ');
         return strNormalized;
+    }
+
+    //Useful for when we have to delete a long sequence of characters from the editor
+    public deleteTextFromEditor(strToRemove : string, typeOfRemoval : string) : string{
+        let commandToRemoveString = ''
+        for (let i = 0 ; i < strToRemove.length; i++){
+            if (typeOfRemoval == "backspace") {
+                commandToRemoveString += 'backspace '
+            }
+            if (typeOfRemoval == "delete") {
+                commandToRemoveString += 'delete '
+            }
+        }
+        return commandToRemoveString
     }
 
     //----------------Network testing----------------
@@ -88,17 +105,20 @@ export class tools{
         return isSignalingServerAccessible
     }
 
-    public startSignalingServer(){
+    public async startSignalingServer(){
         this.handleSignalingServer("start")
+        await this.waitAfterActionOnSignaling(7500)
     }
 
-    public stopSignalingServer(){
+    public async stopSignalingServer(){
         this.handleSignalingServer("stop")
+        await this.waitAfterActionOnSignaling(3500)
     }
 
-    public async waitAfterActionOnSignaling(){
-        await new Promise(resolve => setTimeout(resolve, 2000));
+    public async waitAfterActionOnSignaling(timeToWait : number){
+        await new Promise(resolve => setTimeout(resolve, timeToWait)); 
     }
+
 
     public handleSignalingServer(option : string){
         let commandFullLine = 'cd ../../web-app/ && sh docker_actions.sh ' + option
@@ -109,9 +129,28 @@ export class tools{
             console.log("stdrr : ", stdrr)
             */
         })
-
     }
 
+    //----------------Documents testing----------------
+    public async leaveAndRejoin(t : TestController, muteHomeMenuURL : string, documentURL : string){
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Wait before quitting the doc to make sure text is saved in the editor
+        await t.navigateTo(muteHomeMenuURL)
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for desynchronization to happen completely
+        await t.navigateTo(documentURL)
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Wait after joining the doc for the text to appear
+    }
+
+
+    //----------------Launching a TestCafe runner----------------
+    public async launchRunner(pathToFile : string, browser : string) {
+        const testcafe = await createTestCafe("localhost");
+        const runner = testcafe.createRunner();
+        const failed = await runner
+            .src(pathToFile)
+            .browsers(browser)
+            .run({stopOnFirstFail : true})
+        console.log('Tests failed: ' + failed);
+    }
 
 }
 
