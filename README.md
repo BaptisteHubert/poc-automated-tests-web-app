@@ -1,3 +1,8 @@
+# ⛔️ This repository has been archived
+As the next step of this repository was to test the automated actions possible in gitlab, a `mute-ci` branch was created on the gitlab repository of this project. There was a discrepancy where the project continued on gitlab but not there.
+
+The `mute-ci` branch was recently merged on the [main branch of the gitlab repository](https://gitlab.inria.fr/coast-team/mute/poc/poc-automated-tests-web-app). This is where the latest code is available.
+
 # poc-automated-tests-web-app
 
 This repository aims to show the usage of an automated web app testing suite.
